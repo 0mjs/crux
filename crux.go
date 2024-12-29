@@ -1,9 +1,31 @@
 package crux
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 )
+
+type App struct {
+	routes []Route
+}
+
+type Handler func(ctx *Context)
+
+type Route struct {
+	path    string
+	handler Handler
+	method  string
+	parts   []string
+}
+
+type Map map[string]interface{}
+
+func New() *App {
+	return &App{
+		routes: make([]Route, 0),
+	}
+}
 
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := &Context{
@@ -23,6 +45,17 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	http.NotFound(w, r)
+}
+
+func (a *App) Listen(port ...int) error {
+	defaultPort := 8080
+	if len(port) > 0 && port[0] != 0 {
+		defaultPort = port[0]
+	} else {
+		fmt.Printf("No port provided, using default port %d\n", defaultPort)
+	}
+	fmt.Printf("Server starting on port %d...\n", defaultPort)
+	return http.ListenAndServe(fmt.Sprintf(":%d", defaultPort), a)
 }
 
 func matchPath(path string, route Route, ctx *Context) bool {

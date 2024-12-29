@@ -5,8 +5,6 @@ import (
 	"net/url"
 )
 
-type Map map[string]interface{}
-
 type Context struct {
 	Response    http.ResponseWriter
 	Request     *http.Request
@@ -15,15 +13,10 @@ type Context struct {
 	Method      string
 }
 
-type Handler func(ctx *Context)
-
-type Route struct {
-	path    string
-	handler Handler
-	method  string
-	parts   []string
+func (c *Context) Param(name string) string {
+	return c.PathParams[name]
 }
 
-type App struct {
-	routes []Route
+func (c *Context) Query(name string) string {
+	return c.QueryParams.Get(name)
 }
