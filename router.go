@@ -35,12 +35,21 @@ type Route struct {
 type Middleware func(c *Context)
 
 type Router struct {
-	routes []*Route
-	router *RouteNode
+	routes     []*Route
+	router     *RouteNode
+	middleware []Middleware
+}
+
+func (r *Router) Use(middleware ...Middleware) {
+	r.middleware = append(r.middleware, middleware...)
 }
 
 func (r *Router) Add(method, path string, handlers ...interface{}) {
 	var routeHandlers []RouteHandler
+
+	for _, m := range r.middleware {
+		routeHandlers = append(routeHandlers, RouteHandler(m))
+	}
 
 	for _, handler := range handlers {
 		var rh RouteHandler

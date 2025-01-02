@@ -12,13 +12,13 @@ import (
 var validate = validator.New()
 
 type Context struct {
-	response    http.ResponseWriter
-	request     *http.Request
-	pathParams  map[string]string
-	queryParams url.Values
+	Response    http.ResponseWriter
+	Request     *http.Request
+	PathParams  map[string]string
+	QueryParams url.Values
 	Method      string
 	written     bool
-	handlers    []RouteHandler
+	handlers    []Middleware
 	index       int
 	Store       map[string]interface{}
 	status      int
@@ -26,10 +26,10 @@ type Context struct {
 
 func NewContext(w http.ResponseWriter, r *http.Request) *Context {
 	return &Context{
-		response:    w,
-		request:     r,
-		pathParams:  make(map[string]string),
-		queryParams: r.URL.Query(),
+		Response:    w,
+		Request:     r,
+		PathParams:  make(map[string]string),
+		QueryParams: r.URL.Query(),
 		Method:      r.Method,
 		Store:       make(map[string]interface{}),
 		status:      http.StatusOK,
@@ -38,10 +38,14 @@ func NewContext(w http.ResponseWriter, r *http.Request) *Context {
 
 func (c *Context) Next() {
 	c.index++
-	for c.index < len(c.handlers) {
+	if c.index < len(c.handlers) {
 		c.handlers[c.index](c)
-		c.index++
 	}
+}
+
+func (c *Context) setHandlers(handlers []Middleware) {
+	c.handlers = handlers
+	c.index = -1
 }
 
 func (c *Context) Set(key string, value interface{}) {
@@ -58,20 +62,20 @@ func (c *Context) Status(code int) *Context {
 }
 
 func (c *Context) Param(name string) string {
-	return c.pathParams[name]
+	return c.PathParams[name]
 }
 
 func (c *Context) Query(name string) string {
-	return c.queryParams.Get(name)
+	return c.QueryParams.Get(name)
 }
 
 func (c *Context) Body(v interface{}) error {
-	if c.request.Body == nil {
+	if c.Request.Body == nil {
 		return errors.New("empty request body")
 	}
-	defer c.request.Body.Close()
+	defer c.Request.Body.Close()
 
-	if err := json.NewDecoder(c.request.Body).Decode(v); err != nil {
+	if err := json.NewDecoder(c.Request.Body).Decode(v); err != nil {
 		return err
 	}
 

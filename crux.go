@@ -7,7 +7,8 @@ import (
 )
 
 type App struct {
-	router *Router
+	router     *Router
+	middleware []Middleware
 }
 
 type RouteHandler func(ctx *Context)
@@ -16,21 +17,35 @@ type Map map[string]interface{}
 
 func New() *App {
 	return &App{
-		router: &Router{},
+		router:     &Router{},
+		middleware: make([]Middleware, 0),
 	}
 }
 
+func (a *App) Use(middleware ...Middleware) {
+	a.middleware = append(a.middleware, middleware...)
+}
+
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := &Context{
-		response:    w,
-		request:     r,
-		pathParams:  make(map[string]string),
-		queryParams: r.URL.Query(),
-		Method:      r.Method,
-		Store:       make(map[string]interface{}),
+	ctx := NewContext(w, r)
+
+	ctx.setHandlers(a.middleware)
+
+	if len(a.middleware) > 0 {
+		ctx.Next()
+		if ctx.written {
+			return
+		}
 	}
 
 	path := r.URL.Path
+
+	for _, m := range a.middleware {
+		m(ctx)
+		if ctx.written {
+			return
+		}
+	}
 
 	for _, route := range a.router.routes {
 		if matchPath(path, *route, ctx) && route.method == r.Method {
@@ -65,7 +80,7 @@ func matchPath(path string, route Route, ctx *Context) bool {
 	for i, part := range routeParts {
 		if strings.HasPrefix(part, ":") {
 			paramName := strings.TrimPrefix(part, ":")
-			ctx.pathParams[paramName] = pathParts[i]
+			ctx.PathParams[paramName] = pathParts[i]
 			continue
 		}
 		if part != pathParts[i] {

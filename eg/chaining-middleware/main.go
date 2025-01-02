@@ -7,8 +7,6 @@ import (
 	"github.com/0mjs/crux"
 )
 
-type Middleware func(c *crux.Context)
-
 func Authenticate() crux.Middleware {
 	return func(c *crux.Context) {
 		c.Set("authenticated", true)
@@ -30,20 +28,23 @@ func Authorize(permission string) crux.Middleware {
 	}
 }
 
-func Dink() crux.Middleware {
+func exampleMiddleware() crux.Middleware {
+	fmt.Println("Middleware 'exampleMiddleware' initialized")
 	return func(c *crux.Context) {
-		fmt.Println(c.Store)
+		fmt.Println("Request received:", c.Request.URL.Path)
+		c.Next()
 	}
 }
 
 func main() {
 	app := crux.New()
 
+	app.Use(exampleMiddleware())
+
 	app.GET(
 		"/",
 		Authenticate(),
 		Authorize("some-permission"),
-		Dink(),
 		func(c *crux.Context) {
 			authenticated := c.Get("authenticated")
 			authorized := c.Get("authorized")

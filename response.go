@@ -8,27 +8,27 @@ import (
 func (c *Context) Send(data interface{}) error {
 	switch v := data.(type) {
 	case string:
-		c.response.Header().Set("Content-Type", "text/plain")
-		_, err := c.response.Write([]byte(v))
+		c.Response.Header().Set("Content-Type", "text/plain")
+		_, err := c.Response.Write([]byte(v))
 		return err
 	case []byte:
-		c.response.Header().Set("Content-Type", "application/octet-stream")
-		_, err := c.response.Write(v)
+		c.Response.Header().Set("Content-Type", "application/octet-stream")
+		_, err := c.Response.Write(v)
 		return err
 	default:
-		c.response.Header().Set("Content-Type", "application/json")
-		return json.NewEncoder(c.response).Encode(data)
+		c.Response.Header().Set("Content-Type", "application/json")
+		return json.NewEncoder(c.Response).Encode(data)
 	}
 }
 
 func (c *Context) JSON(data interface{}) error {
 	c.written = true
-	c.response.Header().Set("Content-Type", "application/json")
+	c.Response.Header().Set("Content-Type", "application/json")
 
 	if c.status == 0 {
 		c.status = http.StatusOK
 	}
 
-	c.response.WriteHeader(c.status)
-	return json.NewEncoder(c.response).Encode(data)
+	c.Response.WriteHeader(c.status)
+	return json.NewEncoder(c.Response).Encode(data)
 }
