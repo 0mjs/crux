@@ -1,24 +1,34 @@
 package crux
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"net/http"
+)
 
 func (c *Context) Send(data interface{}) error {
 	switch v := data.(type) {
 	case string:
-		c.Response.Header().Set("Content-Type", "text/plain")
-		_, err := c.Response.Write([]byte(v))
+		c.response.Header().Set("Content-Type", "text/plain")
+		_, err := c.response.Write([]byte(v))
 		return err
 	case []byte:
-		c.Response.Header().Set("Content-Type", "application/octet-stream")
-		_, err := c.Response.Write(v)
+		c.response.Header().Set("Content-Type", "application/octet-stream")
+		_, err := c.response.Write(v)
 		return err
 	default:
-		c.Response.Header().Set("Content-Type", "application/json")
-		return json.NewEncoder(c.Response).Encode(data)
+		c.response.Header().Set("Content-Type", "application/json")
+		return json.NewEncoder(c.response).Encode(data)
 	}
 }
 
 func (c *Context) JSON(data interface{}) error {
-	c.Response.Header().Set("Content-Type", "application/json")
-	return json.NewEncoder(c.Response).Encode(data)
+	c.written = true
+	c.response.Header().Set("Content-Type", "application/json")
+
+	if c.status == 0 {
+		c.status = http.StatusOK
+	}
+
+	c.response.WriteHeader(c.status)
+	return json.NewEncoder(c.response).Encode(data)
 }

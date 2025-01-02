@@ -1,3 +1,3 @@
 [build]
 bin = "tmp/main"
-cmd = "go build -o tmp/main ./examples/crux.go"
+cmd = "go build -o tmp/main ./examples/testing/main.go"

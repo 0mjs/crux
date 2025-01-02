@@ -7,39 +7,33 @@ import (
 )
 
 type App struct {
-	routes []Route
+	router *Router
 }
 
-type Handler func(ctx *Context)
-
-type Route struct {
-	path    string
-	handler Handler
-	method  string
-	parts   []string
-}
+type RouteHandler func(ctx *Context)
 
 type Map map[string]interface{}
 
 func New() *App {
 	return &App{
-		routes: make([]Route, 0),
+		router: &Router{},
 	}
 }
 
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := &Context{
-		Response:    w,
-		Request:     r,
-		PathParams:  make(map[string]string),
-		QueryParams: r.URL.Query(),
+		response:    w,
+		request:     r,
+		pathParams:  make(map[string]string),
+		queryParams: r.URL.Query(),
 		Method:      r.Method,
+		Store:       make(map[string]interface{}),
 	}
 
 	path := r.URL.Path
 
-	for _, route := range a.routes {
-		if matchPath(path, route, ctx) && route.method == r.Method {
+	for _, route := range a.router.routes {
+		if matchPath(path, *route, ctx) && route.method == r.Method {
 			route.handler(ctx)
 			return
 		}
@@ -48,6 +42,8 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) Listen(port ...int) error {
+	fmt.Printf("App Router: %+v\n", a.router)
+
 	defaultPort := 8080
 	if len(port) > 0 && port[0] != 0 {
 		defaultPort = port[0]
@@ -69,7 +65,7 @@ func matchPath(path string, route Route, ctx *Context) bool {
 	for i, part := range routeParts {
 		if strings.HasPrefix(part, ":") {
 			paramName := strings.TrimPrefix(part, ":")
-			ctx.PathParams[paramName] = pathParts[i]
+			ctx.pathParams[paramName] = pathParts[i]
 			continue
 		}
 		if part != pathParts[i] {
