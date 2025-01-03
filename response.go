@@ -32,3 +32,23 @@ func (c *Context) JSON(data interface{}) error {
 	c.Response.WriteHeader(c.status)
 	return json.NewEncoder(c.Response).Encode(data)
 }
+
+func (c *Context) HTML(data string) error {
+	c.written = true
+	c.Response.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	if c.status == 0 {
+		c.status = http.StatusOK
+	}
+
+	c.Response.WriteHeader(c.status)
+	_, err := c.Response.Write([]byte(data))
+	return err
+}
+
+func (c *Context) Static(filepath string) error {
+	c.written = true
+
+	http.ServeFile(c.Response, c.Request, filepath)
+	return nil
+}

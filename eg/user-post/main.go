@@ -21,7 +21,7 @@ func main() {
 			})
 			return
 		}
-		c.JSON(user)
+		c.Status(201).JSON(user)
 	})
 
 	app.Listen(8080)
